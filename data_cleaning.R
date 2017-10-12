@@ -63,9 +63,6 @@ train2017$parcelid <- factor(train2017$parcelid)
 
 train2017_clean <- cleaning_response(train2017)
 
-train2017_clean <- 
-    train2017[!(train2017$row_id %in% c(44962, 9593, 4418, 22576)),]
-
 
 summary(train2017)
 #######################
