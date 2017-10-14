@@ -1,12 +1,13 @@
 library(data.table)
 library(ggplot2)
+library(dummies)
 
 #############################
 # Check submission format
 sampleSubmission <- fread(paste0('~/Desktop/zillow_home_value_prediction/',
                                  'data/sample_submission.csv'), header = T)
 summary(sampleSubmission)
-
+dim(sampleSubmission)
 
 #############################
 # train_2016_v2
@@ -68,16 +69,19 @@ train2017_clean <- cleaning_response(train2017)
 # combine train2016_clean and train2017_clean
 train_clean <- rbind(train2016_clean, train2017_clean)
 
-wk <- function(x) as.numeric(format(x, "%U")) 
-wk_of_month <- function(x) {
-    wk(x) - wk(as.Date(cut(x, "month"))) + 1
-}
+# wk <- function(x) as.numeric(format(x, "%U")) 
+# wk_of_month <- function(x) {
+#     wk(x) - wk(as.Date(cut(x, "month"))) + 1
+# }
 vars <- c("year", "month")
 funs <- c("%Y", "%m")
 for(i in 1:2){
-    train_clean[, vars[i] := factor(format(transactiondate, funs[i]))] 
+    train_clean[, vars[i] := factor(format(transactiondate, funs[i]))]
 }
-train_clean[, "week_of_month" := wk_of_month(transactiondate)] 
+# train_clean[, "week_of_month" := wk_of_month(transactiondate)]
+
+saveRDS(train_clean, file = paste0('~/Desktop/zillow_home_value_prediction/',
+                                   'data/train_clean.rds'))
 
 summaryfun <- function(x){
     list(N = length(x),
@@ -105,17 +109,107 @@ ggplot(agg_by_month_year_m, aes(x = month, y = value, colour = year,
                                 group = interaction(variable, year))) + 
     geom_point() + geom_line()
 
-summary(train2017)
+dim(train_clean)
+
+
+####################################
 #######################
 # properties 2016
 properties2016 <- fread(paste0('~/Desktop/zillow_home_value_prediction/data/',
                                'properties_2016.csv'), header = T)
+properties2016[, "year" := 2016] 
+
 summary(properties2016)
 
+#######################
+# properties 2017
+properties2017 <- fread(paste0('~/Desktop/zillow_home_value_prediction/data/',
+                               'properties_2017.csv'), header = T)
+properties2017[, "year" := 2017] 
+summary(properties2017)
+
+properties <- rbindlist(list(properties2016, properties2017))
+
+properties[, c("censustractandblock",
+               "storytypeid",
+               "typeconstructiontypeid",
+               "pooltypeid10",
+               "pooltypeid2",
+               "pooltypeid7"):=NULL]
+properties$hashottuborspa[properties$hashottuborspa == ''] <- NA
+
+num_pred <- c("basementsqft", 
+              "bathroomcnt",
+              "bedroomcnt",
+              "calculatedbathnbr",
+              "finishedfloor1squarefeet",
+              "calculatedfinishedsquarefeet",
+              "finishedsquarefeet12",
+              "finishedsquarefeet13",
+              "finishedsquarefeet15",
+              "finishedsquarefeet50",
+              "finishedsquarefeet6",
+              "fireplacecnt",
+              "fullbathcnt",
+              "garagecarcnt",
+              "garagetotalsqft",
+              "lotsizesquarefeet",
+              "poolcnt",
+              "poolsizesum",
+              "roomcnt",
+              "threequarterbathnbr",
+              "unitcnt",
+              "yardbuildingsqft17",
+              "yardbuildingsqft26",
+              "numberofstories",
+              "structuretaxvaluedollarcnt",
+              "taxvaluedollarcnt",
+              "landtaxvaluedollarcnt",
+              "taxamount",
+              "taxdelinquencyyear")
+
+cat_pred <- c("year",
+              "airconditioningtypeid",
+              "architecturalstyletypeid", 
+              "buildingclasstypeid",
+              "buildingqualitytypeid",
+              "decktypeid",
+              "fips",
+              "hashottuborspa",
+              "heatingorsystemtypeid",
+              "propertycountylandusecode",
+              "propertylandusetypeid",
+              "rawcensustractandblock",
+              "regionidcity",
+              "regionidcounty",
+              "regionidneighborhood",
+              "regionidzip",
+              "yearbuilt",
+              "fireplaceflag",
+              "assessmentyear",
+              "taxdelinquencyflag")
+
+for (col in cat_pred) properties[, (col) := factor(as.character(properties[[col]]))]
+
+properties[, c("propertyzoningdesc",
+               "latitude",
+               "longitude"):=NULL]
+
+dim(properties)
+summary(properties)
+
+saveRDS(properties, file = paste0('~/Desktop/zillow_home_value_prediction/',
+                                  'data/properties.rds'))
 
 
+model.matrix(parcelid ~ . - 1, data=properties )
 
 
+# example data
+df1 <- data.frame(id = 1:4, year = c(1991:1993, NA))
+
+df1 <- cbind(df1, dummy(df1$year, sep = "_"))
+df1
 
 
 
