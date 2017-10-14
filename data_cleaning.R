@@ -1,4 +1,5 @@
 library(data.table)
+library(ggplot2)
 
 #############################
 # Check submission format
@@ -63,9 +64,47 @@ train2017$parcelid <- factor(train2017$parcelid)
 
 train2017_clean <- cleaning_response(train2017)
 
-train2017_clean <- 
-    train2017[!(train2017$row_id %in% c(44962, 9593, 4418, 22576)),]
 
+#############################
+# combine train2016_clean and train2017_clean
+train_clean <- rbind(train2016_clean, train2017_clean)
+
+wk <- function(x) as.numeric(format(x, "%U")) 
+wk_of_month <- function(x) {
+    wk(x) - wk(as.Date(cut(x, "month"))) + 1
+}
+vars <- c("year", "month")
+funs <- c("%Y", "%m")
+for(i in 1:2){
+    train_clean[, vars[i] := factor(format(transactiondate, funs[i]))] 
+}
+train_clean[, "week_of_month" := wk_of_month(transactiondate)] 
+
+summaryfun <- function(x){
+    list(N = length(x),
+         Mean = mean(x),
+         Median = median(x),
+         Min = min(x),
+         Max = max(x))
+}
+agg_by_date <- train_clean[, summaryfun(logerror), by = transactiondate]
+agg_by_month_year <- train_clean[, summaryfun(logerror), by = list(month, year)]
+agg_by_month_year_m <- melt(agg_by_month_year,
+                            id.vars = c("month", "year"),
+                            measure.vars = c("Mean", "Median", "Min", "Max"))
+summary(agg_by_month_year_m)
+
+ggplot(agg_by_date, aes(transactiondate)) + 
+    geom_line(aes(y = Mean, colour = "Mean")) + 
+    geom_line(aes(y = Median, colour = "Median")) +
+    geom_line(aes(y = Min, colour = "Min")) + 
+    geom_line(aes(y = Max, colour = "Max")) +
+    scale_colour_manual(values=c("black", "orange", "green", "blue"))
+
+ggplot(agg_by_month_year_m, aes(x = month, y = value, colour = year, 
+                                shape = variable, 
+                                group = interaction(variable, year))) + 
+    geom_point() + geom_line()
 
 summary(train2017)
 #######################
