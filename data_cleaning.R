@@ -64,7 +64,6 @@ train2017$parcelid <- factor(train2017$parcelid)
 
 train2017_clean <- cleaning_response(train2017)
 
-
 #############################
 # combine train2016_clean and train2017_clean
 train_clean <- rbind(train2016_clean, train2017_clean)
