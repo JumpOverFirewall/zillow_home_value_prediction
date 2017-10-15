@@ -137,7 +137,14 @@ properties[, c("censustractandblock",
                "typeconstructiontypeid",
                "pooltypeid10",
                "pooltypeid2",
-               "pooltypeid7"):=NULL]
+               "pooltypeid7",
+               "propertyzoningdesc",
+               "propertycountylandusecode",
+               "rawcensustractandblock",
+               "regionidneighborhood",
+               "regionidzip",
+               "latitude",
+               "longitude"):=NULL]
 properties$hashottuborspa[properties$hashottuborspa == ''] <- NA
 
 num_pred <- c("basementsqft", 
@@ -168,7 +175,8 @@ num_pred <- c("basementsqft",
               "taxvaluedollarcnt",
               "landtaxvaluedollarcnt",
               "taxamount",
-              "taxdelinquencyyear")
+              "taxdelinquencyyear",
+              "yearbuilt")
 
 cat_pred <- c("year",
               "airconditioningtypeid",
@@ -179,17 +187,18 @@ cat_pred <- c("year",
               "fips",
               "hashottuborspa",
               "heatingorsystemtypeid",
-              "propertycountylandusecode",
               "propertylandusetypeid",
-              "rawcensustractandblock",
               "regionidcity",
               "regionidcounty",
-              "regionidneighborhood",
-              "regionidzip",
-              "yearbuilt",
               "fireplaceflag",
               "assessmentyear",
               "taxdelinquencyflag")
+
+
+# for (col in cat_pred) {
+#     cat(col, " : ", length(unique(properties[[col]])), " \n ")
+# }
+
 
 for (col in cat_pred) {
     properties[, (col) := factor(as.character(properties[[col]]))]
@@ -197,7 +206,20 @@ for (col in cat_pred) {
 
 properties[, c("propertyzoningdesc",
                "latitude",
-               "longitude"):=NULL]
+               "longitude",
+               "airconditioningtypeid",
+               "architecturalstyletypeid", 
+               "buildingclasstypeid",
+               "buildingqualitytypeid",
+               "fips",
+               "heatingorsystemtypeid",
+               "propertylandusetypeid",
+               "rawcensustractandblock",
+               "regionidcity",
+               "regionidcounty",
+               "regionidneighborhood",
+               "regionidzip",
+               "assessmentyear"):=NULL]
 
 properties$decktypeid <- as.character(properties$decktypeid)
 properties$decktypeid[is.na(properties$decktypeid)] <- 'other'
@@ -219,8 +241,8 @@ saveRDS(properties, file = paste0('~/Desktop/zillow_home_value_prediction/',
 # combine properties with train_clean
 # train_clean <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
 #                               'data/train_clean.rds'))
-# properties <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
-#                              'data/properties.rds'))
+properties <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
+                             'data/properties.rds'))
 
 train_clean[, parcelid_year := paste0(parcelid, "_", year)]
 properties[, parcelid_year := paste0(parcelid, "_", year)]
