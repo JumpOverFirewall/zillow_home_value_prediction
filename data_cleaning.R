@@ -204,23 +204,6 @@ for (col in cat_pred) {
     properties[, (col) := factor(as.character(properties[[col]]))]
 }
 
-properties[, c("propertyzoningdesc",
-               "latitude",
-               "longitude",
-               "airconditioningtypeid",
-               "architecturalstyletypeid", 
-               "buildingclasstypeid",
-               "buildingqualitytypeid",
-               "fips",
-               "heatingorsystemtypeid",
-               "propertylandusetypeid",
-               "rawcensustractandblock",
-               "regionidcity",
-               "regionidcounty",
-               "regionidneighborhood",
-               "regionidzip",
-               "assessmentyear"):=NULL]
-
 properties$decktypeid <- as.character(properties$decktypeid)
 properties$decktypeid[is.na(properties$decktypeid)] <- 'other'
 properties$decktypeid <- factor(properties$decktypeid)
@@ -241,8 +224,8 @@ saveRDS(properties, file = paste0('~/Desktop/zillow_home_value_prediction/',
 # combine properties with train_clean
 # train_clean <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
 #                               'data/train_clean.rds'))
-properties <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
-                             'data/properties.rds'))
+# properties <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
+#                              'data/properties.rds'))
 
 train_clean[, parcelid_year := paste0(parcelid, "_", year)]
 properties[, parcelid_year := paste0(parcelid, "_", year)]
@@ -255,17 +238,31 @@ properties[, c("parcelid"):=NULL]
 final_train <- merge(train_clean, properties, by = "parcelid_year", all.x = T)
 final_train[, c("parcelid_year"):=NULL]
 
-
+options(na.action='na.pass')
 dense_matrix <- model.matrix(logerror ~ . - 1, data = final_train )
-
+saveRDS(dense_matrix, paste0('~/Desktop/zillow_home_value_prediction/',
+                             'data/dense_matrix.rds'))
 
 ###################
 # run model
-model <- xgboost(data = dense_matrix, label = final_train$logerror, 
-                 max_depth = 4,
-                 eta = 0.1,
-                 nrounds = 5000,
-                 objective = "reg:linear",
-                 eval_metric = "mae")
+model <- xgb.cv(data = dense_matrix, label = final_train$logerror, 
+                max_depth = 4,
+                eta = 0.1,
+                nrounds = 1000,
+                objective = "reg:linear",
+                eval_metric = "mae",
+                nfold=5,
+                stratified=F,
+                print_very_n=10)
+
+
+# model <- xgb.train(data = dense_matrix, label = final_train$logerror, 
+#                  max_depth = 4,
+#                  eta = 0.1,
+#                  nrounds = 5000,
+#                  objective = "reg:linear",
+#                  eval_metric = "mae",
+#                  print_very_n=10)
+
 
 
