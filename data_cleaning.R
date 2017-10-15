@@ -294,18 +294,53 @@ pred_data_11$month <- factor('11', levels = c('01', '02', '03', '04', '05', '06'
 pred_data_12$month <- factor('12', levels = c('01', '02', '03', '04', '05', '06',
                                               '07', '08', '09', '10', '11', '12'))
 
+pred_data_10[, c("parcelid_year"):=NULL]
+pred_data_11[, c("parcelid_year"):=NULL]
+pred_data_12[, c("parcelid_year"):=NULL]
+
+pred_data_10_16 <- pred_data_10[pred_data_10$year == '2016',]
+pred_data_10_17 <- pred_data_10[pred_data_10$year == '2017',]
+pred_data_11_16 <- pred_data_11[pred_data_11$year == '2016',]
+pred_data_11_17 <- pred_data_11[pred_data_11$year == '2017',]
+pred_data_12_16 <- pred_data_12[pred_data_12$year == '2016',]
+pred_data_12_17 <- pred_data_12[pred_data_12$year == '2017',]
+
 
 options(na.action='na.pass')
-dense_matrix_10 <- model.matrix(logerror ~ . - 1, data = pred_data_10 )
-dense_matrix_11 <- model.matrix(logerror ~ . - 1, data = pred_data_11 )
-dense_matrix_12 <- model.matrix(logerror ~ . - 1, data = pred_data_12 )
+dense_matrix_10_16 <- model.matrix(logerror ~ . - 1, data = pred_data_10_16)
+predict_10_16 <- predict(object = finalmodel, newdata = dense_matrix_10_16, 
+                         ntreelimit = 75)
+rm(dense_matrix_10_16)
 
-predict_10 <- predict(object = finalmodel, newdata = dense_matrix_10, 
-                      ntreelimit = 75)
-predict_11 <- predict(object = finalmodel, newdata = dense_matrix_11, 
-                      ntreelimit = 75)
-predict_12 <- predict(object = finalmodel, newdata = dense_matrix_12, 
-                      ntreelimit = 75)
+dense_matrix_10_17 <- model.matrix(logerror ~ . - 1, data = pred_data_10_17)
+predict_10_17 <- predict(object = finalmodel, newdata = dense_matrix_10_17, 
+                         ntreelimit = 75)
+rm(dense_matrix_10_17)
+
+
+
+dense_matrix_11_16 <- model.matrix(logerror ~ . - 1, data = pred_data_11_16)
+predict_11_16 <- predict(object = finalmodel, newdata = dense_matrix_11_16, 
+                         ntreelimit = 75)
+rm(dense_matrix_11_16)
+
+dense_matrix_11_17 <- model.matrix(logerror ~ . - 1, data = pred_data_11_17)
+predict_11_17 <- predict(object = finalmodel, newdata = dense_matrix_11_17, 
+                         ntreelimit = 75)
+rm(dense_matrix_11_17)
+
+
+
+dense_matrix_12_16 <- model.matrix(logerror ~ . - 1, data = pred_data_12_16)
+predict_12_16 <- predict(object = finalmodel, newdata = dense_matrix_12_16, 
+                         ntreelimit = 75)
+rm(dense_matrix_12_16)
+
+dense_matrix_12_17 <- model.matrix(logerror ~ . - 1, data = pred_data_12_17)
+predict_12_17 <- predict(object = finalmodel, newdata = dense_matrix_12_17, 
+                         ntreelimit = 75)
+rm(dense_matrix_12_17)
+
 
 
 
