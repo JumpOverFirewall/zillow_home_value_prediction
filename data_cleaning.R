@@ -1,13 +1,15 @@
 library(data.table)
 library(ggplot2)
 library(dummies)
+library(xgboost)
+library(Matrix)
 
 #############################
 # Check submission format
-sampleSubmission <- fread(paste0('~/Desktop/zillow_home_value_prediction/',
-                                 'data/sample_submission.csv'), header = T)
-summary(sampleSubmission)
-dim(sampleSubmission)
+# sampleSubmission <- fread(paste0('~/Desktop/zillow_home_value_prediction/',
+#                                  'data/sample_submission.csv'), header = T)
+# summary(sampleSubmission)
+# dim(sampleSubmission)
 
 #############################
 # train_2016_v2
@@ -83,33 +85,33 @@ for(i in 1:2){
 saveRDS(train_clean, file = paste0('~/Desktop/zillow_home_value_prediction/',
                                    'data/train_clean.rds'))
 
-summaryfun <- function(x){
-    list(N = length(x),
-         Mean = mean(x),
-         Median = median(x),
-         Min = min(x),
-         Max = max(x))
-}
-agg_by_date <- train_clean[, summaryfun(logerror), by = transactiondate]
-agg_by_month_year <- train_clean[, summaryfun(logerror), by = list(month, year)]
-agg_by_month_year_m <- melt(agg_by_month_year,
-                            id.vars = c("month", "year"),
-                            measure.vars = c("Mean", "Median", "Min", "Max"))
-summary(agg_by_month_year_m)
-
-ggplot(agg_by_date, aes(transactiondate)) + 
-    geom_line(aes(y = Mean, colour = "Mean")) + 
-    geom_line(aes(y = Median, colour = "Median")) +
-    geom_line(aes(y = Min, colour = "Min")) + 
-    geom_line(aes(y = Max, colour = "Max")) +
-    scale_colour_manual(values=c("black", "orange", "green", "blue"))
-
-ggplot(agg_by_month_year_m, aes(x = month, y = value, colour = year, 
-                                shape = variable, 
-                                group = interaction(variable, year))) + 
-    geom_point() + geom_line()
-
-dim(train_clean)
+# summaryfun <- function(x){
+#     list(N = length(x),
+#          Mean = mean(x),
+#          Median = median(x),
+#          Min = min(x),
+#          Max = max(x))
+# }
+# agg_by_date <- train_clean[, summaryfun(logerror), by = transactiondate]
+# agg_by_month_year <- train_clean[, summaryfun(logerror), by = list(month, year)]
+# agg_by_month_year_m <- melt(agg_by_month_year,
+#                             id.vars = c("month", "year"),
+#                             measure.vars = c("Mean", "Median", "Min", "Max"))
+# summary(agg_by_month_year_m)
+# 
+# ggplot(agg_by_date, aes(transactiondate)) + 
+#     geom_line(aes(y = Mean, colour = "Mean")) + 
+#     geom_line(aes(y = Median, colour = "Median")) +
+#     geom_line(aes(y = Min, colour = "Min")) + 
+#     geom_line(aes(y = Max, colour = "Max")) +
+#     scale_colour_manual(values=c("black", "orange", "green", "blue"))
+# 
+# ggplot(agg_by_month_year_m, aes(x = month, y = value, colour = year, 
+#                                 shape = variable, 
+#                                 group = interaction(variable, year))) + 
+#     geom_point() + geom_line()
+# 
+# dim(train_clean)
 
 
 ####################################
@@ -119,14 +121,14 @@ properties2016 <- fread(paste0('~/Desktop/zillow_home_value_prediction/data/',
                                'properties_2016.csv'), header = T)
 properties2016[, "year" := 2016] 
 
-summary(properties2016)
+# summary(properties2016)
 
 #######################
 # properties 2017
 properties2017 <- fread(paste0('~/Desktop/zillow_home_value_prediction/data/',
                                'properties_2017.csv'), header = T)
 properties2017[, "year" := 2017] 
-summary(properties2017)
+# summary(properties2017)
 
 properties <- rbindlist(list(properties2016, properties2017))
 
@@ -189,27 +191,59 @@ cat_pred <- c("year",
               "assessmentyear",
               "taxdelinquencyflag")
 
-for (col in cat_pred) properties[, (col) := factor(as.character(properties[[col]]))]
+for (col in cat_pred) {
+    properties[, (col) := factor(as.character(properties[[col]]))]
+}
 
 properties[, c("propertyzoningdesc",
                "latitude",
                "longitude"):=NULL]
 
-dim(properties)
-summary(properties)
+properties$decktypeid <- as.character(properties$decktypeid)
+properties$decktypeid[is.na(properties$decktypeid)] <- 'other'
+properties$decktypeid <- factor(properties$decktypeid)
+
+
+properties$hashottuborspa <- as.character(properties$hashottuborspa)
+properties$hashottuborspa[is.na(properties$hashottuborspa)] <- 'other'
+properties$hashottuborspa <- factor(properties$hashottuborspa)
+
+
+# dim(properties)
+# summary(properties)
 
 saveRDS(properties, file = paste0('~/Desktop/zillow_home_value_prediction/',
                                   'data/properties.rds'))
 
+#####################################
+# combine properties with train_clean
+# train_clean <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
+#                               'data/train_clean.rds'))
+# properties <- readRDS(paste0('~/Desktop/zillow_home_value_prediction/',
+#                              'data/properties.rds'))
 
-model.matrix(parcelid ~ . - 1, data=properties )
+train_clean[, parcelid_year := paste0(parcelid, "_", year)]
+properties[, parcelid_year := paste0(parcelid, "_", year)]
+
+train_clean[, c("parcelid",
+                "transactiondate",
+                "year"):=NULL]
+properties[, c("parcelid"):=NULL]
+
+final_train <- merge(train_clean, properties, by = "parcelid_year", all.x = T)
+final_train[, c("parcelid_year"):=NULL]
 
 
-# example data
-df1 <- data.frame(id = 1:4, year = c(1991:1993, NA))
+dense_matrix <- model.matrix(logerror ~ . - 1, data = final_train )
 
-df1 <- cbind(df1, dummy(df1$year, sep = "_"))
-df1
 
+###################
+# run model
+model <- xgboost(data = dense_matrix, label = final_train$logerror, 
+                 max_depth = 4,
+                 eta = 0.1,
+                 nrounds = 5000,
+                 objective = "reg:linear",
+                 eval_metric = "mae")
 
 
