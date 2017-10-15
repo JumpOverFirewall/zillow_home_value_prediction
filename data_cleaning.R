@@ -6,10 +6,10 @@ library(Matrix)
 
 #############################
 # Check submission format
-# sampleSubmission <- fread(paste0('~/Desktop/zillow_home_value_prediction/',
-#                                  'data/sample_submission.csv'), header = T)
-# summary(sampleSubmission)
-# dim(sampleSubmission)
+sampleSubmission <- fread(paste0('~/Desktop/zillow_home_value_prediction/',
+                                 'data/sample_submission.csv'), header = T)
+summary(sampleSubmission)
+dim(sampleSubmission)
 
 #############################
 # train_2016_v2
@@ -311,35 +311,47 @@ dense_matrix_10_16 <- model.matrix(logerror ~ . - 1, data = pred_data_10_16)
 predict_10_16 <- predict(object = finalmodel, newdata = dense_matrix_10_16, 
                          ntreelimit = 75)
 rm(dense_matrix_10_16)
-
-dense_matrix_10_17 <- model.matrix(logerror ~ . - 1, data = pred_data_10_17)
-predict_10_17 <- predict(object = finalmodel, newdata = dense_matrix_10_17, 
-                         ntreelimit = 75)
-rm(dense_matrix_10_17)
-
-
+results <- data.frame(ParcelId = properties$parcelid[properties$year == '2016',],
+                      '201610' = predict_10_16)
+saveRDS(results, "result.rds")
 
 dense_matrix_11_16 <- model.matrix(logerror ~ . - 1, data = pred_data_11_16)
 predict_11_16 <- predict(object = finalmodel, newdata = dense_matrix_11_16, 
                          ntreelimit = 75)
 rm(dense_matrix_11_16)
-
-dense_matrix_11_17 <- model.matrix(logerror ~ . - 1, data = pred_data_11_17)
-predict_11_17 <- predict(object = finalmodel, newdata = dense_matrix_11_17, 
-                         ntreelimit = 75)
-rm(dense_matrix_11_17)
-
-
+results <- data.frame(results, '201611' = predict_11_16)
+saveRDS(results, "result.rds")
 
 dense_matrix_12_16 <- model.matrix(logerror ~ . - 1, data = pred_data_12_16)
 predict_12_16 <- predict(object = finalmodel, newdata = dense_matrix_12_16, 
                          ntreelimit = 75)
 rm(dense_matrix_12_16)
+results <- data.frame(results, '201612' = predict_12_16)
+saveRDS(results, "result.rds")
+
+
+dense_matrix_10_17 <- model.matrix(logerror ~ . - 1, data = pred_data_10_17)
+predict_10_17 <- predict(object = finalmodel, newdata = dense_matrix_10_17, 
+                         ntreelimit = 75)
+rm(dense_matrix_10_17)
+results <- data.frame(results, '201710' = predict_10_17)
+saveRDS(results, "result.rds")
+
+
+dense_matrix_11_17 <- model.matrix(logerror ~ . - 1, data = pred_data_11_17)
+predict_11_17 <- predict(object = finalmodel, newdata = dense_matrix_11_17, 
+                         ntreelimit = 75)
+rm(dense_matrix_11_17)
+results <- data.frame(results, '201711' = predict_11_17)
+saveRDS(results, "result.rds")
+
 
 dense_matrix_12_17 <- model.matrix(logerror ~ . - 1, data = pred_data_12_17)
 predict_12_17 <- predict(object = finalmodel, newdata = dense_matrix_12_17, 
                          ntreelimit = 75)
 rm(dense_matrix_12_17)
+results <- data.frame(results, '201712' = predict_12_17)
+write.csv(results, "result.csv", row.names = F)
 
 
 
