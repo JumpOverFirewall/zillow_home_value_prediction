@@ -253,7 +253,7 @@ model <- xgb.cv(data = dense_matrix, label = final_train$logerror,
                 eval_metric = "mae",
                 nfold=5,
                 stratified=F,
-                print_very_n=10)
+                print_every_n=10)
 
 
 # model <- xgb.train(data = dense_matrix, label = final_train$logerror, 
@@ -262,7 +262,7 @@ model <- xgb.cv(data = dense_matrix, label = final_train$logerror,
 #                  nrounds = 5000,
 #                  objective = "reg:linear",
 #                  eval_metric = "mae",
-#                  print_very_n=10)
+#                  print_every_n=10)
 
 
 
