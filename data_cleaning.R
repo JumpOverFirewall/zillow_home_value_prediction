@@ -246,23 +246,34 @@ saveRDS(dense_matrix, paste0('~/Desktop/zillow_home_value_prediction/',
 ###################
 # run model
 model <- xgb.cv(data = dense_matrix, label = final_train$logerror, 
-                max_depth = 4,
+                max_depth = 5,
                 eta = 0.1,
-                nrounds = 1000,
+                nrounds = 1500,
                 objective = "reg:linear",
                 eval_metric = "mae",
                 nfold=5,
                 stratified=F,
-                print_very_n=10)
+                print_every_n=10)
 
+head(model$evaluation_log)
+tree <- which.min(model$evaluation_log[[4]])
 
-# model <- xgb.train(data = dense_matrix, label = final_train$logerror, 
-#                  max_depth = 4,
-#                  eta = 0.1,
-#                  nrounds = 5000,
-#                  objective = "reg:linear",
-#                  eval_metric = "mae",
-#                  print_very_n=10)
+DMatrix <- xgb.DMatrix(data=dense_matrix, label=final_train$logerror)
+trainid <- sample(c(rep(T, 117508),rep(F, 50361)),nrow(DMatrix))
+dtrain <- slice(DMatrix, which(trainid))
+dtest <- slice(DMatrix, which(!trainid))
 
+watchlist <- list(train=dtrain, test=dtest)
 
+finalmodel <- xgb.train(data = dtrain, 
+                        watchlist = watchlist,
+                        max_depth = 5,
+                        eta = 0.1,
+                        nrounds = tree,
+                        objective = "reg:linear",
+                        eval_metric = "mae",
+                        print_every_n=10)
 
+xgb.save(finalmodel, "finalmodel")
+
+finalmodel <- xgb.load("finalmodel")
