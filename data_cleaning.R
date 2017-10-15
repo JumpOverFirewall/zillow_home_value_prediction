@@ -246,23 +246,73 @@ saveRDS(dense_matrix, paste0('~/Desktop/zillow_home_value_prediction/',
 ###################
 # run model
 model <- xgb.cv(data = dense_matrix, label = final_train$logerror, 
-                max_depth = 4,
+                max_depth = 5,
                 eta = 0.1,
-                nrounds = 1000,
+                nrounds = 1500,
                 objective = "reg:linear",
                 eval_metric = "mae",
                 nfold=5,
                 stratified=F,
                 print_every_n=10)
 
+head(model$evaluation_log)
+tree <- which.min(model$evaluation_log[[4]])
 
-# model <- xgb.train(data = dense_matrix, label = final_train$logerror, 
-#                  max_depth = 4,
-#                  eta = 0.1,
-#                  nrounds = 5000,
-#                  objective = "reg:linear",
-#                  eval_metric = "mae",
-#                  print_every_n=10)
+DMatrix <- xgb.DMatrix(data=dense_matrix, label=final_train$logerror)
+trainid <- sample(c(rep(T, 117508),rep(F, 50361)),nrow(DMatrix))
+dtrain <- slice(DMatrix, which(trainid))
+dtest <- slice(DMatrix, which(!trainid))
+
+watchlist <- list(train=dtrain, test=dtest)
+
+finalmodel <- xgb.train(data = dtrain, 
+                        watchlist = watchlist,
+                        max_depth = 5,
+                        eta = 0.1,
+                        save_period = NULL,
+                        nrounds = 75,
+                        objective = "reg:linear",
+                        eval_metric = "mae",
+                        print_every_n=10)
+
+xgb.save(finalmodel, 
+         "/Users/yueshengu/Desktop/zillow_home_value_prediction/finalmodel.model")
+
+finalmodel <- xgb.load("/Users/yueshengu/Desktop/zillow_home_value_prediction/finalmodel")
+
+
+#############################
+# Prepare data for prediction
+
+
+pred_data_10 <- pred_data_11 <- pred_data_12 <- properties
+pred_data_10$logerror <- pred_data_11$logerror <- pred_data_12$logerror <- 0
+pred_data_10$month <- factor('10', levels = c('01', '02', '03', '04', '05', '06',
+                                              '07', '08', '09', '10', '11', '12'))
+pred_data_11$month <- factor('11', levels = c('01', '02', '03', '04', '05', '06',
+                                              '07', '08', '09', '10', '11', '12'))
+pred_data_12$month <- factor('12', levels = c('01', '02', '03', '04', '05', '06',
+                                              '07', '08', '09', '10', '11', '12'))
+
+
+options(na.action='na.pass')
+dense_matrix_10 <- model.matrix(logerror ~ . - 1, data = pred_data_10 )
+dense_matrix_11 <- model.matrix(logerror ~ . - 1, data = pred_data_11 )
+dense_matrix_12 <- model.matrix(logerror ~ . - 1, data = pred_data_12 )
+
+predict_10 <- predict(object = finalmodel, newdata = dense_matrix_10, 
+                      ntreelimit = 75)
+predict_11 <- predict(object = finalmodel, newdata = dense_matrix_11, 
+                      ntreelimit = 75)
+predict_12 <- predict(object = finalmodel, newdata = dense_matrix_12, 
+                      ntreelimit = 75)
+
+
+
+
+
+
+
 
 
 
